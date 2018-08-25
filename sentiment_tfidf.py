@@ -10,11 +10,13 @@ import pandas as pd
 import os
 from random import shuffle
 from sklearn.feature_extraction.text import TfidfVectorizer
-from keras.layers import Dense,Activation,Input,Dropout
+from keras.layers import Dense,Activation,Input,Dropout,concatenate
 import keras.regularizers as reg
 from keras.models import Model
 import keras.backend as k
 from keras.utils import to_categorical
+from sklearn.metrics import classification_report,confusion_matrix
+
    
 
 
@@ -50,16 +52,48 @@ x_tst.shape
 
 y_trn=to_categorical(y_trn,num_classes=5)
 y_tst=to_categorical(y_tst,num_classes=5)
+clss={0:1.1,1:1.05,2:1,3:1.05,4:1.1}
 k.clear_session()
 review=Input(dtype="float32",shape=(x_trnb.shape[1],))
-X=Dense(256,activation='tanh',kernel_regularizer=reg.l2(l=1e-2))(review)
-X=Dropout(0.1)(X)
-X=Dense(64,activation='relu',kernel_regularizer=reg.l2(l=5e-3))(X)
-X=Dropout(0.1)(X)
+X=Dense(128,activation='tanh',kernel_regularizer=reg.l2(l=1e-3))(review)
+X=Dropout(0.2)(X)
+X=Dense(64,activation='relu',kernel_regularizer=reg.l2(l=1e-4))(X)
+X=Dropout(0.05)(X)
+X=Dense(32,activation='relu',kernel_regularizer=reg.l2(l=1e-5))(X)
 X=Dense(5,activation='softmax')(X)
 model=Model(inputs=review,outputs=X)
 model.compile(optimizer='adam',metrics=['categorical_accuracy'],loss='categorical_crossentropy')
-model.fit(x=x_trnb,y=y_trn,batch_size=512,epochs=30,validation_data=(x_tst,y_tst))
+model.summary()
+model.fit(x=x_trnb,y=y_trn,batch_size=512,epochs=10,validation_data=(x_tst,y_tst),class_weight=clss)
+#model.fit(x=x_trnb,y=y_trn,batch_size=512,epochs=5,validation_data=(x_tst,y_tst))
+model.evaluate(x=x_tst,y=y_tst)
 
+prediction=model.predict(x_tst)
+predict_class=np.argmax(prediction,axis=1)
+rp=classification_report(tst.Sentiment.values,predict_class)
+cm=confusion_matrix(tst.Sentiment.values,predict_class)
+print(rp)
+print(cm)
+tst.groupby('Sentiment')['Sentiment'].count()
+
+length=trn.Phrase.apply(lambda x:np.float32(len(x.split(' '))))
+length_tst=tst.Phrase.apply(lambda x:np.float32(len(x.split(' '))))
+
+clss={0:1.1,1:1.05,2:1,3:1.05,4:1.1}
+k.clear_session()
+review=Input(dtype="float32",shape=(x_trnb.shape[1],))
+X=Dense(128,activation='tanh',kernel_regularizer=reg.l2(l=1e-3))(review)
+X=Dropout(0.2)(X)
+X=Dense(64,activation='relu',kernel_regularizer=reg.l2(l=1e-4))(X)
+X=Dropout(0.05)(X)
+X=Dense(32,activation='relu',kernel_regularizer=reg.l2(l=1e-5))(X)
+lngth=Input(shape=(1,),dtype='float32')
+X=concatenate([X,lngth])
+X=Dense(5,activation='softmax')(X)
+model=Model(inputs=[review,lngth],outputs=X)
+model.compile(optimizer='adam',metrics=['categorical_accuracy'],loss='categorical_crossentropy')
+model.summary()
+#model.fit(x=[x_trnb,length],y=y_trn,batch_size=512,epochs=5,validation_data=([x_tst,length_tst],y_tst),class_weight=clss)
+model.fit(x=[x_trnb,length],y=y_trn,batch_size=512,epochs=10,validation_data=([x_tst,length_tst],y_tst))
 
 
