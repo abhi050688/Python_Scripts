@@ -1,0 +1,16 @@
+{% extends "layout.html" %}
+{% block Content %}
+    {% for post in posts %}
+        <div class="card mb-2">
+            <div class="card-header">
+                <span class=""><strong>{{ post.author }}</strong> posted on </span>
+                <span>{{ post.date_posted }}</span>
+            </div>
+            <div class="card-body">
+                <h4 class="card-title display-4">{{ post.title }}</h4>
+                <p class="card-text mt-2">{{ post.content }}</p>
+                <button type="button" class="btn btn-outline-primary mt-3">Read More</button>
+            </div>
+        </div>
+    {% endfor %}
+{% endblock Content %}
